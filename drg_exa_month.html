@@ -1,0 +1,1677 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link type="text/css" rel="Stylesheet" href="../../css/themes/default/easyui.css"/>
+	<link type="text/css" rel="Stylesheet" href="../../css/themes/icon.css"/>
+	<link type="text/css" rel="Stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript" src="../../js/jquery/jquery.min-1.11.1.js"></script>
+	<script type="text/javascript" src="../../js/easyui/jquery.easyui.min.js"></script>
+	<script type="text/javascript" src="../../js/easyui/easyui-lang-zh_CN.js"></script>
+	<script type="text/javascript" src="../../js/moment.min.js"></script>
+	<script type="text/javascript" src="../../js/path.js"></script>
+	<script type="text/javascript" src="../../js/base.js"></script>
+	<script type="text/javascript" src="../../js/jquery/jquery.blockUI.js"></script>
+	<script type="text/javascript" src="../../js/dic.js"></script>
+	<script type="text/javascript" src="../../js/base64.js"></script>
+	<script type="text/javascript" src="../../js/My97DatePicker/WdatePicker.js"></script>
+	<script type="text/javascript" src="../../js/Highcharts-3.0.7/js/highcharts.src.js"></script>
+	<script type="text/javascript" src="../../js/report/reportbase.js"></script>
+	<script type="text/javascript" src="../../js/Print.js"></script>
+	<style type="text/css">
+		.kaohe_head{ text-align: center; font-size:25px; padding: 10px;}
+		.kaohe_context{ text-align: center; font-size: 25px; padding: 10px;}
+		.kaohe_color{ color:#F00;}
+		.kaohe_text{text-align: center; margin: 35px;}
+		.dayin input{ width: 120px; margin: 0 10px; text-align: center;}
+		.shuoming input{ width:55px; margin: 0 10px; text-align: center;}
+		.ssz{ width: 100%; float: left; text-align: center;}
+		@page {/* 打印页面设置 */
+			size: auto;  /* auto is the initial value */
+			margin-left:100px; /* this affects the margin in the printer settings */
+		}
+	</style>
+	<title>月考核</title>
+
+	<script type="text/javascript">
+
+        var currTab;	// 当前tab
+        var opt1;
+
+        $(function(){
+            opt1 = $.extend(true, {}, g_option);
+            opt1.pagination = true;
+            opt1.columns=[[
+                {title:'id',field:'id',hidden:true},
+                {title:'医院编码',field:'hosp_id',hidden:true},
+                {title:'医院名称',field:'hosp_name',width:140,align:'center'},
+                {title:'唯一标识',field:'flag',width:140,align:'center'},
+                {title:'开始时间',field:'start_date',align:'center',sortable:'true',width:140,formatter:function(value,row,index){
+                    return value ? moment(value).format('YYYY-MM-DD HH:mm:ss') : '';
+                }},
+                {title:'结束时间',field:'end_date',align:'center',sortable:'true',width:140,formatter:function(value,row,index){
+                    return value ? moment(value).format('YYYY-MM-DD HH:mm:ss') : '';
+                }},
+                {title:'创建时间',field:'create_date',align:'center',sortable:'true',width:140,formatter:function(value,row,index){
+                    return value ? moment(value).format('YYYY-MM-DD HH:mm:ss') : '';
+                }},
+                {title:'当前得分',field:'score',width:100},
+                {title:"操作",field:"_3",width:200,align:'center',formatter:function(value,row,index){
+                    var start_date = row.start_date.split(" ");
+                    var end_date  =  row.end_date.split(" ");
+                    var str1='<input type="button" onclick="_module(\'' + row.hosp_id+ '\',\'' + row.flag+ '\',\'' + start_date[0]+ '\',\'' + end_date[0]+ '\')" value="详细" />&nbsp;';
+                    var str2 = '<input type="button" onclick="_del(' + row.id + ',\'' + row.name + '\')" value="删除" class="button_bak" />&nbsp;';
+                    return str1;
+                }}
+
+            ]];
+
+            $("#dg").datagrid({
+                width:1300,
+                height:400,
+                fit:true,
+                fitColumns:false,     //滚动条
+                nowrap:false,
+                singleSelect:true,
+                rownumbers:true,
+                striped:true
+            });
+
+            opt1.init('DRG_EXA_MONTH', $('#dg'), $('#paramContent'), $('#searchBtn'));
+
+            opt1.addHtml('医院名称:');
+            opt1.putAdd('hospId',$('<input id="stdType" style="width:150px" />'));
+			//opt1.query();
+            //医院下拉框查询
+            $('#stdType').combobox({
+                method: 'post',
+                url: getContextPath()+'/query',
+                onBeforeLoad: function (param) {
+                    param.queryId = 'CTRL_HOSPITAL_DRG_NAME',
+                        param.clauseAut=""
+                },
+                valueField: 'label',
+                textField: 'value'
+            });
+
+            //新增考核的医院下拉框查询
+            $('#chooseHosp').combobox({
+                method: 'post',
+                url: getContextPath()+'/query',
+                onBeforeLoad: function (param) {
+                    param.queryId = 'CTRL_HOSPITAL_DRG_NAME',
+                        param.clauseAut=""
+                },
+                valueField: 'label',
+                textField: 'value'
+            });
+
+            $('#addKaohe').bind('click').bind('click',function(){
+                $('#addDiv').window('open');
+            });
+
+            setTimeout(function () {
+                opt1.query();
+            },2);
+        });
+
+        // 重绘tabs
+        function reDraw() {
+            $("#tt").tabs('resize');
+        }
+
+        function demo(){
+            $.ajax({
+                type: "POST", dataType:"json", async: true,
+				/*   data:{
+				 id:id,
+				 queryId:"DEL_DRG_EXA_FEE_BY_DRGREG"
+				 },
+				 url: getRequestUrl('query'), */
+                data: {str:'测试张三：'},
+                url: getContextPath()+'/drgs_exa/drgs_demo',
+                success: function(data){
+                    if(data.status != 1) return;
+                    $.messager.alert('测试',data.obj, 'info');
+                }
+            });
+        }
+
+        /**
+         * 测试queryID方式
+         */
+        function demo2(){
+            $.ajax({
+                type: "POST", dataType:"json", async: true,
+                data:{
+                    queryId:"CTRL_USER_ORG_AUTHORIZED"
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(data.status != 1) return;
+                    $.messager.alert('测试query',data.rows , 'info');
+                }
+            });
+        }
+
+        /**
+         * 关闭添加框
+         */
+        function closeForm(){
+            $('#addDiv').window('close');
+        }
+        function zsy() {//自适应说明表格高度
+            var length = $(".dayin").find("tr").length;
+            for(var i=0; i<length; i++){
+                $(".shuoming").find("tr").eq(i).height($(".dayin").find("tr").eq(i).height());
+            }
+        }
+        //得分为负数时 =0
+		function zero(e) {
+			return  (e < 0)?0:e;
+        }
+        //格式化
+        function gsh() {
+            $("input[name='sys_lead']").val("");
+            $("input[name='sys_dept']").val("");
+            $("input[name='sys_rules']").val("");
+            $("input[name='sys_train']").val("");
+            $("input[name='sys_notice']").val("");
+            $("input[name='sys_real']").val("");
+            $("input[name='sys_info']").val("");
+            $("input[name='sys_update']").val("");
+            $("input[name='q_path']").val("");
+            $("input[name='q_path_c']").val("");
+            $("input[name='q_out']").val("");
+            $("input[name='q_turn']").val("");
+            $("input[name='s_low']").val("");
+            $("input[name='s_turn']").val("");
+            $("input[name='f_self']").val("");
+
+            $("input[name='s_error']").val("").attr("data","");
+            $("input[name='s_code']").val("").attr("data","");
+            $("input[name='s_lack']").val("").attr("data","");
+
+            $("#sys_lead_2").html("");
+            $("#sys_dept_2").html("");
+            $("#sys_rules_2").html("");
+            $("#sys_train_2").html("");
+            $("#sys_notice_2").html("");
+            $("#sys_real_2").html("");
+            $("#sys_info_2").html("");
+            $("#sys_update_2").html("");
+            $("#q_low_2").html("");
+            $("#q_path_2").html("");
+            $("#q_path_c_2").html("");
+            $("#q_out_2").html("");
+            $("#q_turn_2").html("");
+            $("#q_commonly_2").html("");
+            $("#q_serionus_2").html("");
+            $("#s_error_2").html("");
+            $("#s_code_2").html("");
+            $("#s_lack_2").html("");
+            $("#s_low_2").html("");
+            $("#s_turn_2").html("");
+            $("#s_drg_2").html("");
+            $("#s_drg_g_2").html("");
+            $("#s_weight_2").html("");
+            $("#ss_cmi_2").html("");
+            $("#f_ratio_2").html("");
+            $("#f_mean_2").html("");
+            $("#f_day_2").html("");
+            $("#f_compensate_2").html("");
+            $("#f_illegal_2").html("");
+            $("#f_self_2").html("");
+        }
+        /**
+         * 新增月考核
+         */
+        function submitForm(){
+            if ($('#ff2').form('validate')==false){
+                return;
+            }
+            if($("#dateStart").val()=='' || $("#dateEnd").val()==''){
+                $.messager.alert('系统提示','日期不能为空!','info');
+                return false;
+            }
+            if($("#dateEnd").val() < $("#dateStart").val()){
+                $.messager.alert('系统提示','结束日期不能小于开始日期!','info');
+                return false;
+            }
+            //设置全局变量
+            hospitalName=$('#chooseHosp').combobox('getText');	//医院名称
+            hospitalId=$('#chooseHosp').combobox('getValue');	//医院编码
+            dateStart=$("#dateStart").val();
+            dateEnd=$("#dateEnd").val();
+            //设置去年全局变量
+            begintime = dateStart.split("-");
+            begintimes = (begintime[0]-1)+"-"+begintime[1]+"-"+begintime[2];
+            begintimes_y = begintime[0]+"-"+(begintime[1]-1)+"-"+begintime[2];
+            endtime = dateEnd.split("-");
+            endtimes = (endtime[0]-1)+"-"+endtime[1]+"-"+endtime[2];
+            endtimes_y = endtime[0]+"-"+(endtime[1]-1)+"-"+endtime[2];
+            //新增月考核
+            $.ajax({
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    hospitalName:hospitalName,	//医院名称
+                    hospitalId:hospitalId,	//医院编码
+                    dateStart:dateStart,
+                    dateEnd:dateEnd
+                },
+                url: getContextPath()+'/drgs_exa/add_hosp_examine',
+                success: function(data){
+                    var length = $(".dayin").find("tr").length;
+                    for(var i=0; i<length; i++){
+                        $(".shuoming").find("tr").eq(i).height($(".dayin").find("tr").eq(i).height());
+                    }
+                    if(data.status != 1) return;
+                    addSuccessUUID=data.obj;	//返回新增医院的UUID(flag)
+                    $('#chooseHosp').combobox('setText',"");
+                    $('#chooseHosp').combobox('setValue',"");
+                    $('#dateStart').val("");
+                    $('#dateEnd').val("");
+                    $('#addDiv').window('close');
+                    //格式化input
+                    gsh();
+                    //保存成功后打开考核明细窗口
+                    opt1.query();
+                    addnews(dateStart,dateEnd,begintimes,endtimes,begintimes_y,endtimes_y)
+                }
+            });
+        }
+        function addnews(a,b,c,d,e,f) {//新增
+            //考核明细窗口
+            $("#kaohe_win").window('open');
+            //自适应高度
+            zsy();
+            //获取信息
+            data_open1("Q_LOW_0","Q_LOW_1","Q_LOW_2",hospitalId,a,b);
+            data_open2("Q_COMMONLY",hospitalId,a,b,"q_commonly",c,d,e,f);
+            data_open2("Q_SERIONUS",hospitalId,a,b,"q_serionus",c,d,e,f);
+            data_open4("S_DRG",hospitalId,a,b,"s_drg",c,d,e,f);
+            data_open4("S_DRG_G",hospitalId,a,b,"s_drg_g",c,d,e,f);
+            data_open4("S_WEIGHT",hospitalId,a,b,"s_weight",c,d,e,f);
+            data_open4("S_DRG_G",hospitalId,a,b,"s_cmi",c,d,e,f);
+            data_open4("F_RATIO",hospitalId,a,b,"f_ratio",c,d,e,f);
+            data_open5("F_MEAN",hospitalId,a,b,"f_mean",c,d);
+            data_open6("F_DAY",hospitalId,a,b,"f_day",c,d);
+            data_open6("F_COMPENSATE",hospitalId,a,b,"f_compensate",c,d);
+            data_open7("F_ILLEGAL",hospitalId,a,b,"f_illegal",c,d);
+        }
+        function _module(a,b,A1,B1){
+            console.log(a);
+            addSuccessUUID = b;
+            hospitalId = a;
+            $.ajax({
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:"SEARCH_SCORE_DETAIL_BY_FLAG",
+                    flag:b
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(data.rows.length == 0){
+                        if(data.status != 1) return;
+                        $("#kaohe_win").window('open');
+                        data.rows.forEach(function(a){
+                            //$("input[name='"+a.name+"']").val(a.score).attr("data",a.value).attr("data2",a.other);
+                            $("#"+a.name+"").html("<input name='"+a.name+"' value='"+a.score+"' data='"+a.value+"' data2='"+a.other+"'>");
+                            $("#"+a.name+"_2").html(a.remarks);
+                        });
+                        $("input[value='核查']").attr("hosp_id",a);
+                        //数据格式化
+                        gsh();
+                        //设置去年上月时间
+                        _begintime = A1.split("-");
+                        _begintimes = (_begintime[0]-1)+"-"+_begintime[1]+"-"+_begintime[2];
+                        _begintimes_y = _begintime[0]+"-"+(_begintime[1]-1)+"-"+_begintime[2];
+                        _endtime = B1.split("-");
+                        _endtimes = (_endtime[0]-1)+"-"+_endtime[1]+"-"+_endtime[2];
+                        _endtimes_y = _endtime[0]+"-"+(_endtime[1]-1)+"-"+_endtime[2];
+                        addnews(A1,B1,_begintimes,_endtimes,_begintimes_y,_endtimes_y);
+                        console.log("数据未保存");
+                    }else {
+                        if(data.status != 1) return;
+                        $("#kaohe_win").window('open');
+                        data.rows.forEach(function(a){
+                            //$("input[name='"+a.name+"']").val(a.score).attr("data",a.value).attr("data2",a.other);
+                            $("#"+a.name+"").html("<input name='"+a.name+"' value='"+a.score+"' data='"+a.value+"' data2='"+a.other+"'>");
+                            $("#"+a.name+"_2").html(a.remarks);
+                        });
+                        $("input[value='核查']").attr("hosp_id",a);
+                        console.log("数据已保存");
+                    }
+                }
+            });
+            //表格高度自适应
+            zsy()
+        }
+        /**
+         * 请求示例
+         */
+		/*function _module(hospitalId,dateStart,dateEnd,addSuccessUUID){
+		 alert(hospitalId+"=="+dateStart+"=="+dateEnd+"=="+addSuccessUUID);
+		 $.ajax({
+		 type: "POST", dataType:"json", async: false,
+		 data:{
+		 queryId:"F_ILLEGAL",
+		 hospitalId:"286",
+		 dateStart:"2012-10-10 00:00:00",
+		 dateEnd:"2017-10-10 00:00:00"
+		 },
+		 url: getContextPath()+'/query',
+		 success: function(data){
+		 if(data.status != 1) return;
+		 $.messager.alert('测试query',data.rows , 'info');
+		 }
+		 });
+		 }*/
+
+        function data_open1(a,a1,a2,b,c,d) {//低住院天数人次占比（肿瘤放、化疗，产科、新生儿科、日间手术、24小时死亡病例、严重疾病患者要求转院的除外）
+            var q_low_0 ='';
+            var q_low_1 ='';
+            var q_low_2 ='';
+
+            $.ajax({//2 天
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a2,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    console.log("住院2"+data.rows[0].result);
+                    if(data.rows[0].result > 0.04){
+                        q_low_2 = (zero(((data.rows[0].result - 0.04).toFixed(2))*100))
+                    }else {
+                        q_low_2 =0
+                    }
+                }
+            });
+            $.ajax({//1 天
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a1,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(data.rows[0].result > 0.02){
+                        q_low_1 = (zero(((data.rows[0].result - 0.02).toFixed(2))*100))
+                    }
+                    if(data.rows[0].result < 0.02){
+                        q_low_1 = 0
+                    }
+                }
+            });
+            $.ajax({//0 天
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(data.rows[0].result > 0.005){
+                        q_low_0 = (zero(((data.rows[0].result - 0.005).toFixed(3))*1000))
+                    }
+                    if(data.rows[0].result < 0.005){
+                        q_low_0 = 0
+                    }
+                }
+            });
+            $("input[name='q_low']").val( zero(5 - (q_low_0 + q_low_1 + q_low_2)))
+        }
+        function data_open2(a,b,c,d,e,f,g,h,i){//一般合并症出院人次占比 //严重合并症出院人次占比
+            var jn_q_serionus= '';
+            var qn_q_serionus= '';
+            var dy_q_serionus= '';
+            var jn_q_commonly= '';
+            var qn_q_commonly= '';
+            var dy_q_commonly= '';
+
+            $.ajax({//今年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    jn_q_serionus = data.rows[0].result;
+                    jn_q_commonly = data.rows[0].result;
+                    console.log("今年"+jn_q_commonly)
+                }
+            });
+            $.ajax({//去年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:f,
+                    dateEnd:g
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    qn_q_serionus = data.rows[0].result;
+                    qn_q_commonly = data.rows[0].result;
+                    //qn_q_serionus = data.rows[0].result
+                    console.log("去年"+qn_q_commonly)
+                }
+            });
+            $.ajax({//上月
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:h,
+                    dateEnd:i
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    dy_q_serionus = data.rows[0].result;
+                    dy_q_commonly = data.rows[0].result;
+                    //dy_q_serionus = 0.002;
+                    //dy_q_commonly = 0.003
+                    console.log("当月"+dy_q_commonly)
+                }
+            });
+
+            if(e == "q_commonly"){
+                $("#year_select").change(function () {//一般合并症出院人次占比
+                    if( $(this).val() == 0 && ((jn_q_commonly - qn_q_commonly)*10) >0.2 && qn_q_commonly != null){//去年
+                        $("input[name='"+e+"']").val(zero(3 -  ((((jn_q_commonly - qn_q_commonly)*10)-0.2).toFixed(1))*10) )
+                    }else {
+                        $("input[name='"+e+"']").val(3)
+					}
+                    if( $(this).val() == 1 && ((jn_q_commonly - dy_q_commonly)*10) >0.2 && dy_q_commonly != null){//上月
+                        $("input[name='"+e+"']").val(zero(3 -  ((((jn_q_commonly - dy_q_commonly)*10)-0.2).toFixed(1))*10) );
+                        console.log("当月")
+                    }else {
+                        $("input[name='"+e+"']").val(3);
+					}
+                });
+                $("#year_select").change()
+            }
+            if(e == "q_serionus"){
+                $("#year_select2").change(function () {//严重合并症出院人次占比
+                    if( $(this).val() == 0 && ((jn_q_serionus - qn_q_serionus)*10) >0.2 && qn_q_serionus != null){//去年
+                        $("input[name='"+e+"']").val(zero(4 -  ((((jn_q_serionus - qn_q_serionus)*10)-0.2).toFixed(1))*10) )
+                    }else {
+                        $("input[name='"+e+"']").val(4)
+					}
+                    if( $(this).val() == 1 && ((jn_q_serionus - dy_q_serionus)*10) >0.2 && dy_q_serionus != null){//今年上月
+                        $("input[name='"+e+"']").val(zero(4 -  ((((jn_q_serionus - dy_q_serionus)*10)-0.2).toFixed(1))*10) );
+                        console.log("当月")
+                    }else {
+                        $("input[name='"+e+"']").val(4)
+					}
+                });
+                $("#year_select2").change()
+            }
+        }
+        function looks(a,input_class){//主要诊断、手术或操作选择错误 // 编码与临床诊断不符 // 减少必要服务
+            var nu = $("input[name='"+input_class+"']").attr("data");
+            var hosp_id = $("input[value='核查']").attr("hosp_id");
+            console.log(typeof (hosp_id));
+
+            if(nu){
+                orderIDsStr = ($("input[name='"+input_class+"']").attr("data2"));
+                var orderIDsStr_sx = ($("input[name='"+input_class+"']").attr("data"));//筛选的问题
+                console.log(orderIDsStr_sx);
+                //var orderIDsStr="97_9543861,97_9543915,97_9567161";
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:"SEARCH_ORDER_BY_ORDERID",
+                        orderIds:orderIDsStr
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        console.info(data.rows);
+
+                        $('#lookRoundDiv_cq').window("open");
+                        $('#round100_cq').datagrid({
+                            fit:true,
+                            fitColumns:true,
+                            //selectRecord:2,
+                            rownumbers:true,
+                            columns:[[
+                                {title:'选择',field:'ck',checkbox:true,width:20},
+                                {field:'order_id',title:'就诊编号',width:100},
+                                {field:'name',title:'姓名',width:100,align:'right'},
+                                {field:'hospital_name',title:'医院名称',width:100,align:'right'},
+                                {field:'gender',title:'性别',width:100,align:'right'},
+                                {field:'insu_no',title:'医保号',width:100,align:'right'},
+                                {field:'reimb_type',title:'报销类型',width:100,align:'right'},
+                                {field:'region_name',title:'地区',width:100,align:'right'},
+                                {field:'diagnose',title:'诊断',width:100,align:'right'},
+                                {field:'drg',title:'drg',width:100,align:'right'},
+                                {field:'create_date',title:'创建时间',width:100,align:'right'},
+                            ]]
+                        });
+                        $("#round100_cq").datagrid('loadData',{ total: data.total, rows: data.rows });
+                        $("#round100_up2").attr("class",input_class);
+                        var ids =orderIDsStr_sx.split(",");
+                        //获取数据列表中的所有数据
+                        var rows = $("#round100_cq").datagrid("getRows");
+                        //循环数据找出列表中ID和需要选中数据的ID相等的数据并选中
+                        for(var i=0;i<rows.length;i++){
+                            var rowId = rows[i].order_id;
+                            for(var j=0;j<ids.length;j++){
+                                if(rowId==ids[j]){
+                                    var index = $("#round100_cq").datagrid("getRowIndex",rows[i])
+                                    $("#round100_cq").datagrid("checkRow",index);
+                                }
+                            }
+                        }
+                        //selectRecord
+
+                        console.log("不随机了");
+                    }
+                });
+            }else {
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:a,
+                        hospitalId: (hosp_id == undefined) ? hospitalId:hosp_id
+                        //hospitalId:(hospitalId)
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        console.log("第一次随机");
+                        order_id_all = [];
+                        data.rows.forEach(function (data) {
+                            order_id_all.push(data.order_id);
+                        });
+                        if(data.status != 1) return;
+                        $('#lookRoundDiv').window("open");
+                        $('#round100').datagrid({
+                            fit:true,
+                            fitColumns:true,
+                            rownumbers:true,
+                            columns:[[
+                                {title:'选择',field:'ck',checkbox:true,width:20},
+                                {field:'order_id',title:'就诊编号',width:100},
+                                {field:'name',title:'姓名',width:100,align:'right'},
+                                {field:'hospital_name',title:'医院名称',width:100,align:'right'},
+                                {field:'gender',title:'性别',width:100,align:'right'},
+                                {field:'insu_no',title:'医保号',width:100,align:'right'},
+                                {field:'reimb_type',title:'报销类型',width:100,align:'right'},
+                                {field:'region_name',title:'地区',width:100,align:'right'},
+                                {field:'diagnose',title:'诊断',width:100,align:'right'},
+                                {field:'drg',title:'drg',width:100,align:'right'},
+                                {field:'create_date',title:'创建时间',width:100,align:'right'}
+                            ]]
+                        });
+                        $("#round100").datagrid('loadData',{ total: data.total, rows: data.rows });
+                        $("#round100_up").attr("class",input_class);
+                    }
+                });
+            }
+        }
+        function data_open4(a,b,c,d,e,f,g,h,i){//DRG病组覆盖率 //DRG病组入组率 //总权重 //病例组合指数（CMI值） //按项目结算与DRGs结算占比
+            var qn_s_weight='';
+            var qn_f_ratio='';
+            var qn_s_drg_g='';
+            var qn_s_drg='';
+
+            var jn_s_weight='';
+            var jn_f_ratio='';
+            var jn_s_drg_g='';
+            var jn_s_drg='';
+
+            var dy_s_weight='';
+            var dy_f_ratio='';
+            var dy_s_drg_g='';
+            var dy_s_drg='';
+
+            var jn_s_cmi ='';
+            var qn_s_cmi ='';
+            var dy_s_cmi ='';
+            $.ajax({//去年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:f,
+                    dateEnd:g
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(e == "s_weight"){
+                        //qn_s_weight = 4020.15;
+                        qn_s_weight = data.rows[0].drgTotalWeightR;
+                        //每低于10
+                    }if(e == "f_ratio"){
+                        //qn_f_ratio = 500;
+                        qn_f_ratio = data.rows[0].result;
+                        //高于5%的
+                    }if(e == "s_drg_g") {
+                        //qn_s_drg_g = 1.2;
+                        qn_s_drg_g = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_drg") {
+                        //qn_s_drg = 0.12;
+                        qn_s_drg = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_cmi") {
+                        jn_s_cmi = data.rows[0].result;
+					}
+                }
+            });
+            $.ajax({//今年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(e == "s_weight"){
+                        jn_s_weight = data.rows[0].drgTotalWeightR;
+                        //每低于10
+                    }if(e == "f_ratio"){
+                        jn_f_ratio = data.rows[0].result;
+                        //高于5%的
+                    }if(e == "s_drg_g"){
+                        jn_s_drg_g = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_drg"){
+                        jn_s_drg = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_cmi") {
+                        jn_s_cmi = data.rows[0].result;
+                    }
+                }
+            });
+            $.ajax({//当月
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:h,
+                    dateEnd:i
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    if(e == "s_weight"){
+                        //dy_s_weight = 4020.15;
+                        dy_s_weight = data.rows[0].drgTotalWeightR;
+                        //每低于10
+                    }if(e == "f_ratio"){
+                        //dy_f_ratio = 500;
+                        dy_f_ratio = data.rows[0].result;
+                        //高于5%的
+                    }if(e == "s_drg_g") {
+                        //dy_s_drg_g = 1.2;
+                        dy_s_drg_g = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_drg") {
+                        //dy_s_drg = 0.11;
+                        dy_s_drg = data.rows[0].result;
+                        //低于97%后每减少1%，扣1分
+                    }if(e == "s_cmi") {
+                        jn_s_cmi = data.rows[0].result;
+                    }
+                }
+            });
+            if(e=="s_drg"){
+                $("#s_drg_input").change(function () {
+                    if($(this).val() == 0){//s_drg 年
+                        if(jn_s_drg < (qn_s_drg * 0.97) && qn_s_drg != null){
+                            $("input[name='"+e+"']").val(zero(3 - (  (( (qn_s_drg*0.97) - jn_s_drg).toFixed(2))*100 )));
+                        }else{
+                            $("input[name='"+e+"']").val(3);
+                        }
+                    }else { //s_drg 月
+                        if(jn_s_drg < (dy_s_drg * 0.97) && dy_s_drg != null){
+                            $("input[name='"+e+"']").val(zero(3 - (  (( (dy_s_drg*0.97) - jn_s_drg).toFixed(2))*100 )));
+                        }else {
+                            $("input[name='"+e+"']").val(3);
+                        }
+                    }
+                });
+                $("#s_drg_input").change();
+			}
+			if(e=="s_drg_g"){
+                $("#s_drg_g_input").change(function () {
+                    if($(this).val() == 0){
+                        if(jn_s_drg_g < (qn_s_drg_g * 0.97) && qn_s_drg_g != null){//s_drg_g  年
+                            $("input[name='"+e+"']").val(zero(4 - (  (( (qn_s_drg_g*0.97) - jn_s_drg_g).toFixed(1))*10 )))
+                        }else{
+                            $("input[name='"+e+"']").val(4)
+                        }
+                    }else {
+                        if(jn_s_drg_g < (dy_s_drg_g * 0.97) && dy_s_drg_g != null){//s_drg_g  月
+                            $("input[name='"+e+"']").val(zero(4 - (  (( (dy_s_drg_g*0.97) - jn_s_drg_g).toFixed(1))*10 )))
+                        }else{
+                            $("input[name='"+e+"']").val(4)
+                        }
+                    }
+                });
+                $("#s_drg_g_input").change()
+			}
+			if(e=="s_weight"){
+                $("#s_weight_input").change(function () {
+                    if($(this).val() == 0){//s_weight 年
+                        if(jn_s_weight < qn_s_weight  && qn_s_weight != null){
+                            $("input[name='"+e+"']").val(zero(3 - ((qn_s_weight - jn_s_weight)/10).toFixed(0)))
+                        }else{
+                            $("input[name='"+e+"']").val(3)
+                        }
+                    }else {//s_weight 月
+                        if(jn_s_weight < dy_s_weight  && dy_s_weight != null){
+                            $("input[name='"+e+"']").val(zero(3 - ((dy_s_weight - jn_s_weight)/10).toFixed(0)))
+                        }else{
+                            $("input[name='"+e+"']").val(3)
+                        }
+                    }
+                });
+                $("#s_weight_input").change()
+			}
+			if(e=="s_cmi"){
+                $("#s_cmi_input").change(function () {
+                    if($(this).val() == 0){
+                        if(jn_s_cmi < qn_s_cmi && qn_s_cmi != null){ //去年比较
+                            $("input[name='"+e+"']").val(zero(3 - ((qn_s_cmi - jn_s_cmi)*10).toFixed(0)))
+                        }else {
+                            $("input[name='"+e+"']").val(3);
+                        }
+                    }else {
+                        if(jn_s_cmi < dy_s_cmi && dy_s_cmi != null){ //上月比较
+                            $("input[name='"+e+"']").val(zero(3 - ((dy_s_cmi - jn_s_cmi)*10).toFixed(0)))
+                        }else {
+                            $("input[name='"+e+"']").val(3);
+                        }
+                    }
+                });
+                $("#s_cmi_input").change()
+			}
+			if(e=="f_ratio"){
+                $("#f_ratio_input").change(function () {
+                    if($(this).val() == 0){//f_ratio 年
+                        if(jn_f_ratio > qn_f_ratio && qn_f_ratio != null){
+                            $("input[name='"+e+"']").val(zero(5 - ((jn_f_ratio - qn_f_ratio).toFixed(1))- 0.5))
+                        }
+                        else{
+                            $("input[name='"+e+"']").val(5)
+                        }
+                    }else {
+                        if(jn_f_ratio > dy_f_ratio && dy_f_ratio != null){ //f_ratio 月
+                            $("input[name='"+e+"']").val(zero(5 - ((jn_f_ratio - dy_f_ratio).toFixed(1))- 0.5))
+                        }
+                        else{
+                            $("input[name='"+e+"']").val(5)
+                        }
+                    }
+                });
+                $("#f_ratio_input").change()
+			}
+        }
+
+        function data_open5(a,b,c,d,e,f,g){//次均住院费用
+            var b_id = hospitalId;
+            var dengji= '';
+            var zy_jn ="";
+            var zy_qn ="";
+            $.ajax({//等级计算
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:"SEARCH_HOSPITAL_GRADE_BYHOSPITALID",
+                    hospitalId:b_id
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    dengji = (data.rows[0].hospital_grade).substring(0,2);
+                    console.log("医院等级"+data.rows[0].hospital_grade)
+                }
+            });
+            $.ajax({//今年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    zy_jn = (data.rows[0].result == null)?null:data.rows[0].result
+                }
+            });
+            $.ajax({//去年
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:f,
+                    dateEnd:g
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    //zy_qn = 7000;
+                    zy_qn = (data.rows[0].result == null)?null:data.rows[0].result
+                }
+            });
+
+            if(dengji == "三级"){
+                var zy_bj = zy_jn / zy_qn;
+                if(zy_bj >0.08 && zy_qn != null){
+                    $("input[name='"+e+"']").val( zero((4 - (zy_bj - 0.08)*100).toFixed(0)) )
+                }else {
+                    $("input[name='"+e+"']").val(4);
+                }
+            }if(dengji == "二级"){
+                var zy_bj2 = zy_jn / zy_qn;
+                if(zy_bj2 >0.06 && zy_qn != null){
+                    $("input[name='"+e+"']").val( zero(4 - ((zy_bj2 - 0.06)*100).toFixed(0)) )
+                }else {
+                    $("input[name='"+e+"']").val(4);
+                }
+            }else {
+                $("input[name='"+e+"']").val(4);
+			}
+        }
+        function data_open6(a,b,c,d,e,f,g){//平均住院日//实际补偿比
+            if(e == "f_day"){
+                var qn ="";
+                var jn ="";
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:a,
+                        hospitalId:b,
+                        dateStart:f,
+                        dateEnd:g
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        qn = data.rows[0].result
+                    }
+                });
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:a,
+                        hospitalId:b,
+                        dateStart:c,
+                        dateEnd:d
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        jn = data.rows[0].result
+                    }
+                });
+                if((jn > qn) && qn !=null ){
+                    var data = jn - qn;
+                    $("input[name='f_day']").val(zero(3 - data.toFixed(0)));
+                }else {
+                    $("input[name='f_day']").val(3);
+                }
+            }
+            else if(e =="f_compensate"){
+                var qn2 ="";
+                var jn2 ="";
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:a,
+                        hospitalId:b,
+                        dateStart:f,
+                        dateEnd:g
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        qn2 = data.rows[0].result
+                    }
+                });
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        queryId:a,
+                        hospitalId:b,
+                        dateStart:c,
+                        dateEnd:d
+                    },
+                    url: getContextPath()+'/query',
+                    success: function(data){
+                        jn2 = data.rows[0].result
+                    }
+                });
+                if(jn2 < qn2 && jn2 != null && qn2 != null){
+                    var data2 = qn2 - jn2;
+                    $("input[name='f_compensate']").val(zero(4 - (data2.toFixed(2))*100 ));
+                }else {
+                    $("input[name='f_compensate']").val(4);
+                }
+            }
+        }
+        function data_open7(a,b,c,d){//非合规费用占比
+            $.ajax({
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:a,
+                    hospitalId:b,
+                    dateStart:c,
+                    dateEnd:d
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    var zb = data.rows[0].result;
+                    if(data.rows[0].result > 0.1 && data.rows[0].result!= null){
+                        $("input[name='f_illegal']").val(zero(2-(data.rows[0].result).toFixed(1)));
+                    }else {
+                        $("input[name='f_illegal']").val(2)
+                    }
+                }
+            });
+        }
+        //----------------------------提交数据----------------------------------
+        function submits() {
+                var flag = addSuccessUUID; //明细唯一标识
+                var codes=[
+                    {'flag':flag,'name':'sys_lead','score':$("input[name='sys_lead']").val(),'value':'','remarks':($("#sys_lead_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_dept','score':$("input[name='sys_dept']").val(),'value':'','remarks':($("#sys_dept_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_rules','score':$("input[name='sys_rules']").val(),'value':'','remarks':($("#sys_rules_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_train','score':$("input[name='sys_train']").val(),'value':'','remarks':($("#sys_train_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_notice','score':$("input[name='sys_notice']").val(),'value':'','remarks':($("#sys_notice_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_real','score':$("input[name='sys_real']").val(),'value':'','remarks':($("#sys_real_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_info','score':$("input[name='sys_info']").val(),'value':'','remarks':($("#sys_info_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'sys_update','score':$("input[name='sys_update']").val(),'value':'','remarks':($("#sys_update_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_low','score':$("input[name='q_low']").val(),'value':'','remarks':($("#q_low_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_path','score':$("input[name='q_path']").val(),'value':'','remarks':($("#q_path_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_path_c','score':$("input[name='q_path_c']").val(),'value':'','remarks':($("#q_path_c_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_out','score':$("input[name='q_out']").val(),'value':'','remarks':($("#q_out_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_turn','score':$("input[name='q_turn']").val(),'value':'','remarks':($("#q_turn_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_commonly','score':$("input[name='q_commonly']").val(),'value':'','remarks':($("#q_commonly_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'q_serionus','score':$("input[name='q_serionus']").val(),'value':'','remarks':($("#q_serionus_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_error','score':$("input[name='s_error']").val(),'value':$("input[name='s_error']").attr("data"),'remarks':($("#s_error_2").val()).trim(),'other':$("input[name='s_error']").attr("data2")},
+                    {'flag':flag,'name':'s_code','score':$("input[name='s_code']").val(),'value':$("input[name='s_code']").attr("data"),'remarks':($("#s_code_2").val()).trim(),'other':$("input[name='s_code']").attr("data2")},
+                    {'flag':flag,'name':'s_lack','score':$("input[name='s_lack']").val(),'value':$("input[name='s_lack']").attr("data"),'remarks':($("#s_lack_2").val()).trim(),'other':$("input[name='s_lack']").attr("data2")},
+                    {'flag':flag,'name':'s_low','score':$("input[name='s_low']").val(),'value':'','remarks':($("#s_low_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_turn','score':$("input[name='s_turn']").val(),'value':'','remarks':($("#s_turn_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_drg','score':$("input[name='s_drg']").val(),'value':'','remarks':($("#s_drg_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_drg_g','score':$("input[name='s_drg_g']").val(),'value':'','remarks':($("#s_drg_g_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_weight','score':$("input[name='s_weight']").val(),'value':'','remarks':($("#s_weight_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'s_cmi','score':$("input[name='s_cmi']").val(),'value':'','remarks':($("#s_cmi_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_ratio','score':$("input[name='f_ratio']").val(),'value':'','remarks':($("#f_ratio_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_mean','score':$("input[name='f_mean']").val(),'value':'','remarks':($("#f_mean_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_day','score':$("input[name='f_day']").val(),'value':'','remarks':($("#f_day_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_compensate','score':$("input[name='f_compensate']").val(),'value':'','remarks':($("#f_compensate_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_illegal','score':$("input[name='f_illegal']").val(),'value':'','remarks':($("#f_illegal_2").val()).trim(),'other':''},
+                    {'flag':flag,'name':'f_self','score':$("input[name='f_self']").val(),'value':'','remarks':($("#f_self_2").val()).trim(),'other':''}
+                ];
+                var obj =JSON.stringify(codes);//将对象转为字符串
+                $.ajax({
+                    type: "POST", dataType:"json", async: false,
+                    data:{
+                        jsonStr:obj
+                    },
+                    url: getContextPath()+'/drgs_exa/add_hosp_detail',
+                    success: function(data){
+                        console.log(codes);
+                        if(data.status != 1) return;
+                        //console.log('保存明细',data.obj , 'info');
+                        $("#kaohe_win").window('close');
+                    }
+                });
+        }
+        function exPort(){//导出医院
+            var opt = {
+                cols : {'hosp_id':1,'hosp_name':1,'start_date':1,'end_date':1,'create_date':1,'score':1},
+                chCols : {'医院编码':1,'医院名称':1,'开始时间':1,'结束时间 ':1,'创建时间':1,'当前得分':1}
+            };
+            var rows = opt1.dg.datagrid('getRows');
+            if(rows.length > 0) {
+                opt1.exportCsv(1000000,opt);
+            } else {
+                $.messager.show({title:'系统信息',msg:'数据为空请查询后再导出!'});
+            }
+        }
+
+        function test(){
+            var flag = "976aaf08be8449649240de5aee5f5922"; //明细唯一标识
+            var codes=[
+                {'flag':flag,'name':'sys_lead','score':'4','value':'','remarks':'成立DRGs付费相关领导、管理组织','other':'与上月比较'},
+				/*{'flag':flag,'name':'sys_notice','score':'3.36','value':'','remarks':'备注','other':''},
+				 {'flag':flag,'name':'sys_gf','score':'15','value':'','remarks':'','other':''},
+				 {'flag':flag,'name':'s_error','score':'5','value':'95923|95268','remarks':'','other':'696#4554_655#26yyr$16|95_262|95923|95268'}*/
+            ];
+            var obj =JSON.stringify(codes);//将对象转为字符串
+            $.ajax({
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    jsonStr:obj
+                },
+                url: getContextPath()+'/drgs_exa/add_hosp_detail',
+                success: function(data){
+                    if(data.status != 1) return;
+                    $.messager.alert('保存明细',data.obj , 'info');
+                }
+            });
+        }
+
+        //自定义写法
+        function kaohe_close() {
+            $("#kaohe_win").window("close")
+        }
+        //随机一百
+        function round100_up() {
+            var selRows = $('#round100').datagrid('getChecked');
+            var data_round_to =[];
+            selRows.forEach(function (data) {
+                data_round_to.push(data.order_id);
+            });
+            if(selRows.length >10){
+                alert("不能超过10条")
+            }else {
+                var input_class = $("#round100_up").attr("class");
+                $("input[name='"+input_class+"']").val(5-(selRows.length*0.5)).attr("data",data_round_to).attr("data2",order_id_all);
+                $('#lookRoundDiv').window("close");
+            }
+        }
+        function round100_up2() {
+            var selRows = $('#round100_cq').datagrid('getChecked');
+            var data_round_to =[];
+            selRows.forEach(function (data) {
+                data_round_to.push(data.order_id);
+            });
+            if(selRows.length >10){
+                alert("不能超过10条")
+            }else {
+                var input_class = $("#round100_up2").attr("class");
+                $("input[name='"+input_class+"']").val(5-(selRows.length*0.5)).attr("data",data_round_to).attr("data2",orderIDsStr);
+                $('#lookRoundDiv_cq').window("close");
+            }
+        }
+        function testOrderID(){//获取保存数据
+            //将数据库的97_9543861|97_9543915|97_9567161转为如下作为参数
+            var orderIDsStr="97_9543861,97_9543915,97_9567161";
+            $.ajax({
+                type: "POST", dataType:"json", async: false,
+                data:{
+                    queryId:"SEARCH_ORDER_BY_ORDERID",
+                    orderIds:orderIDsStr
+                },
+                url: getContextPath()+'/query',
+                success: function(data){
+                    console.info(data.rows);
+                }
+            });
+        }
+        //随机100关闭
+        function round100_close(){
+            $('#lookRoundDiv').window("close");
+        }
+	</script>
+
+</head>
+<body class="noprint">
+<div class="easyui-layout" data-options="fit:true">
+	<div data-options="region:'north',border:false,split:false" class="fsearchbar" style="height:40px;">
+			<span id="paramContent">
+			</span>
+		<span style="margin-top: 3px;margin-bottom:3px; ">
+				<a id="searchBtn" class="easyui-linkbutton" >查询</a>
+				<a id="addKaohe" class="easyui-linkbutton" >新增考核</a>
+				<a id="exPort" onclick="exPort()" class="easyui-linkbutton">导出</a>
+			<!--<a id="exPort2" onclick="test()" class="easyui-linkbutton">保存明细示例</a>
+            <a id="exPort3" onclick="testOrderID()" class="easyui-linkbutton">数据导出</a>-->
+			</span>
+	</div>
+	<div data-options="region:'center',border:false,split:false">
+		<table id="dg"></table>
+	</div>
+</div>
+<div id="win" data-options="minimizable:false,maximizable:false,modal:true,top:50"><div id='p'></div></div>
+<!-- 对话框 -->
+<div style="display: none;">
+	<div id="addDiv" class="easyui-window" closed="true" modal="true" title="添加考核" data-options="iconCls:'icon-save'" style="width:370px;height:220px;padding:10px;">
+		<div style="padding:5px">
+			<form id="ff2" method="post">
+				<table cellpadding="5">
+					<tr>
+						<td>医院:</td>
+						<td>
+							<input class="easyui-combobox" id="chooseHosp" data-options="required:true" style="width: 200px;"/>
+
+						</td>
+					</tr>
+					<tr>
+						<td valign="top">开始时间：</td>
+						<td>
+							<input id="dateStart" type="text" class="textbox"  style="width:100px" onFocus="WdatePicker({dateFmt:'yyyy-MM-dd'})" />
+						</td>
+					</tr>
+					<tr>
+						<td valign="top">结束时间：</td>
+						<td>
+							<input id="dateEnd" type="text" class="textbox" style="width:100px"  onFocus="WdatePicker({dateFmt:'yyyy-MM-dd'})" />
+						</td>
+					</tr>
+					<tr>
+					</tr>
+
+				</table>
+			</form>
+
+		</div>
+		<div>
+			<div style="text-align:center;padding:10px;">
+				<span id="save"><a href="javascript:void(0)" class="easyui-linkbutton" onclick="submitForm()" iconCls="icon-ok">下一步</a></span>
+				&nbsp;&nbsp;
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="closeForm()" iconCls="icon-cancel">关闭</a>
+			</div>
+		</div>
+
+		<!--分组明细 start -->
+		<div id="showDRG" class="easyui-window" closed="true" modal="true" title="DRGs统计" data-options="iconCls:'icon-save',minimizable:false,maximizable:false" style="width:80%;height:80%">
+			<div id="d_block" class="window-mask" style="z-index:1000;display:none" ></div>
+			<div class="easyui-layout" style="width:100%;height: 100%" >
+				<div data-options="region:'north',border:false,split:false" class="fsearchbar" style="height:40px;">
+					<a onclick="exPort2()" class="easyui-linkbutton">导出</a>
+				</div>
+				<div data-options="region:'center',border:false,split:false">
+					<table id="dg2"></table>
+				</div>
+			</div>
+		</div>
+
+		<!--分组明细 end -->
+	</div>
+</div>
+<div style="display: none;">
+	<div id="kaohe_win" class="easyui-window" closed="true" modal="true" title="考核窗口" data-options="iconCls:'icon-save'" style="width:980px;height:800px;">
+		<div class="kaohe_text">
+			<div id="copy_dy" class="showprint">
+				<div class="kaohe_head">六盘水市新农合按疾病诊断相关组（DRGs）<br>付费考核评分表</div>
+				<div class="kaohe_context">
+					<span>被考试医院试点</span>
+					<span>医院负责人(签字):______</span>
+					<span>考核得分:______</span>
+				</div>
+				<table width="91%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #CCC; float:left;" class="dayin">
+					<tr>
+						<td width="10%" align="center"><p align="center" ><strong>考核</strong><strong> </strong><br />
+							<strong>内容</strong></p></td>
+						<td width="17%" align="center"><p ><strong>具体指标</strong></p></td>
+						<td width="9%" align="center"><p ><strong>分值</strong></p></td>
+						<td width="13%" align="center"><p align="center" ><strong>评分方法</strong><strong> </strong><br />
+							<strong>或计算公式</strong></p></td>
+						<td width="19%" align="center"><p ><strong>评分标准</strong></p></td>
+						<td width="20%" align="center"><p ><strong>考核得分</strong></p></td>
+						<td width="12%" align="center"><p ><strong>备注</strong></p></td>
+					</tr>
+					<tr>
+						<td rowspan="8" align="center"><p align="center" ><strong>医疗制度建立</strong><strong> </strong><br />
+							<strong>25分</strong><strong> </strong></p></td>
+						<td align="center"><p >成立DRGs付费相关领导、管理组织，有主要领导分管，有专人负责，执行工作例会制，定期分析DRGs付费改革实施情况</p></td>
+						<td align="center"><p >4</p></td>
+						<td align="center"><p >现场实地查看</p></td>
+						<td align="center"><p >无相关领导、专人负责、管理组织，扣1分； <br />
+							无工作例会制，扣1分（领导小组每月至少召开一次工作例会）； <br />
+							分管领导无参与指导工作痕迹，扣1分； <br />
+							无定期分析材料，扣1分</p></td>
+						<td align="center" id="sys_lead"><input type="text" name="sys_lead"/></td>
+						<td align="center">
+							<textarea id="sys_lead_2" rows="10" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >制定并实施DRGs付费科室考核制度</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >现场实地查看</p></td>
+						<td align="center"><p >无DRGs付费科室考核制度相关文件，扣1分； <br />
+							无DRGs付费科室考核记录，扣1分</p></td>
+						<td align="center" id="sys_dept"><input type="text" name="sys_dept"/></td>
+						<td align="center">
+							<textarea id="sys_dept_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >制定并实施DRGs付费科室考核制度</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >现场实地查看</p></td>
+						<td align="center"><p >无DRGs病案审查流程，扣1分； <br />
+							无DRGs病案审查工作奖惩制度相关文件，扣1分； <br />
+							无DRGs病案审查工作奖惩兑现相关工作记录，扣1分</p></td>
+						<td align="center" id="sys_rules"><input type="text" name="sys_rules"/></td>
+						<td align="center">
+							<textarea id="sys_rules_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >开展对参合患者和医务人员的DRGs政策宣传；对单位职工进行DRGs知识业务培训</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >现场实地查看</p></td>
+						<td align="center"><p >无相关宣传材料，扣1分；无培训记录、图片等培训资料，扣1分</p></td>
+						<td align="center" id="sys_train"><input type="text" name="sys_train"/></td>
+						<td align="center">
+							<textarea id="sys_train_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >开展对新农合项目收费与DRGs付费的结算以及相关政策进行公示</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >现场实地查看</p></td>
+						<td align="center"><p >每月及时更新公示表，未及时公示新农合项目收费与DRGs付费结算数据，扣1分；未公示相关政策，扣1分</p></td>
+						<td align="center" id="sys_notice"><input type="text" name="sys_notice"/></td>
+						<td align="center">
+							<textarea id="sys_notice_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >建立参合患者人员身份真实性核查机制</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >现场实地查看，查看违规举报记录，随访</p></td>
+						<td align="center"><p >无参合患者人员身份真实性核查机制，扣1分；住院患者身份证、合医证等相关信息与本人不符，存在虚假住院、冒名顶替等现象，发现1例扣0.5分</p></td>
+						<td align="center" id="sys_real"><input type="text" name="sys_real"/></td>
+						<td align="center">
+							<textarea id="sys_real_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >参合患者病案信息上报及时完整</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >根据数据报送情况</p></td>
+						<td align="center"><p >HIS系统漏报、错报数据信息，与新农合患者实际结算数据信息不一致，扣1分； <br />
+							人为原因造成大范围数据丢失或数据传输错误，扣1分； <br />
+							不严格按照&#8220;1793&#8221;时限要求上传病案信息，未具体落实到人，未建立奖惩制度，扣1分</p></td>
+						<td align="center" id="sys_info"><input type="text" name="sys_info"/></td>
+						<td align="center">
+							<textarea id="sys_info_2" rows="12" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td align="center"><p >按照新农合需求更新、升级医院HIS系统，确保分组器正常运行</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >根据日常维护情况</p></td>
+						<td align="center"><p >不按照新农合需求更新、改造、升级HIS系统，扣1分； <br />
+							不及时排除HIS系统故障，造成分组器一周以上不能正常运行，扣1分</p></td>
+						<td align="center" id="sys_update"><input type="text" name="sys_update"/></td>
+						<td align="center">
+							<textarea id="sys_update_2" rows="9" cols="20"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="7" align="center"><p align="center" ><strong>医疗</strong><br />
+							<strong>质量</strong><br />
+							<strong>管理</strong><br />
+							<strong>25分</strong></p></td>
+						<td align="center" class="kaohe_color"><p >低住院天数人次占比（肿瘤放、化疗，产科、新生儿科、日间手术、24小时死亡病例、严重疾病患者要求转院的除外）</p></td>
+						<td align="center" class="kaohe_color">5</td>
+						<td align="center" class="kaohe_color"><p >低住院天数人次占比=参合患者住院天数&#8804;对应天数的人次/同期参合患者出院人次数&#215;100%</p></td>
+						<td align="center" class="kaohe_color"><p >住院天数0天人次占比控制在0.5%以内，每超过1%，扣1分；住院天数1天人次占比控制在2%以内，每超过1%，扣1分；住院天数2天人次占比控制在4%以内，每超过1%，扣1分</p></td>
+						<td align="center" class="kaohe_color" id="q_low"><input type="text" name="q_low" /></td>
+						<td align="center" class="kaohe_color"><textarea id="q_low_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >临床路径覆盖率</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >进入临床路径的病人人次占比</p></td>
+						<td align="center"><p >临床路径覆盖率不低于上年水平，每低于1%，扣1分</p></td>
+						<td align="center" id="q_path"><input type="text" name="q_path"/></td>
+						<td align="center"><textarea id="q_path_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >完成临床路径人次覆盖率</p></td>
+						<td align="center">5</td>
+						<td align="center"><p >完成临床路径人次覆盖率=参合患者完成临床路径出径人次/同期参合患者出院人次数&#215;100%</p></td>
+						<td align="center"><p >完成临床路径人次覆盖率不低于上年水平，每低于1%，扣1分</p></td>
+						<td align="center" id="q_path_c"><input type="text" name="q_path_c"/></td>
+						<td align="center"><textarea id="q_path_c_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >入出院诊断符合率</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >入出院诊断符合率=出院诊断与入院诊断符合的参合患者出院人次/同期参合患者出院人次数&#215;100%。（随机抽取病历不少于100份进行统计）</p></td>
+						<td align="center"><p >参照等级医院评审标准（&#8805;95%），每减少1%，扣1分</p></td>
+						<td align="center" id="q_out"><input type="text" name="q_out"/></td>
+						<td align="center"><textarea id="q_out_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >二级、三级医院县（市）外转院率</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >医院县（市）外转院率=当年（月）转诊县（市）外病人数/当年（月）出院人次数&#215;100%</p></td>
+						<td align="center"><p >每高于上年水平1%，扣1分</p></td>
+						<td align="center" id="q_turn"><input type="text" name="q_turn"/></td>
+						<td align="center"><textarea id="q_turn_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >一般合并症出院人次占比</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >一般合并症出院人次占比=一般合并症DRG组参合患者出院人次/上年（月）或当年（月）参合患者DRG出院人次&#215;100%</p></td>
+						<td align="center"><p >允许在上年（月）或当年（月）水平的上下2%范围内浮动，每超过1%，扣1分</p></td>
+						<td align="center" id="q_commonly"><input type="text" name="q_commonly" /></td>
+						<td align="center"><textarea id="q_commonly_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >严重合并症出院人次占比</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >严重合并症出院人次占比=严重合并症DRG组参合患者出院人次/上年（月）或当年（月）参合患者DRG出院人次&#215;100%</p></td>
+						<td align="center"><p >允许在上年（月）或当年（月）水平的上下2%范围内浮动，每超过1%，扣1分</p></td>
+						<td align="center" id="q_serionus"><input type="text" name="q_serionus"/></td>
+						<td align="center"><textarea id="q_serionus_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td rowspan="9" align="center"><p align="center" ><strong>医疗</strong><strong> </strong><br />
+							<strong>服务</strong><strong> </strong><br />
+							<strong>规范 30分</strong></p></td>
+						<td align="center" class="kaohe_color"><p >主要诊断、手术或操作选择错误</p></td>
+						<td align="center" class="kaohe_color">5</td>
+						<td align="center" class="kaohe_color"><p >随机抽取病历不少于100份进行统计 </p></td>
+						<td align="center" class="kaohe_color">发现1%错误，扣0.5分</td>
+						<td align="center" class="kaohe_color" id="s_error"><input type="text" name="s_error"/></td>
+						<td align="center" class="kaohe_color"><textarea id="s_error_2" rows="3" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >编码与临床诊断不符</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >随机抽取病历不少于100份进行统计</p></td>
+						<td align="center"><p >发现1%错误，扣0.5分</p></td>
+						<td align="center" id="s_code"><input type="text" name="s_code"/></td>
+						<td align="center"><textarea id="s_code_2" rows="3" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >减少必要服务</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >应该必须提供的医疗服务项目没有做，疾病诊断诊疗所需的必要医疗服务减少（随机抽取病历不少于100份进行统计）</p></td>
+						<td align="center"><p >发现1%扣0.5分</p></td>
+						<td align="center" id="s_lack"><input type="text" name="s_lack"/></td>
+						<td align="center"><textarea id="s_lack_2" rows="3" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >低标准入院</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >随机抽取病历不少于100份进行统计</p></td>
+						<td align="center"><p >发现1%扣0.5分</p></td>
+						<td align="center" id="s_low"><input type="text" name="s_low"/></td>
+						<td align="center"><textarea id="s_low_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >转嫁住院费用，违规让住院患者到门诊交费或购买耗材等</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >查看违规举报记录，随访（随机抽取病历不少于100份进行统计）</p></td>
+						<td align="center"><p >发现1%扣0.5分</p></td>
+						<td align="center" id="s_turn"><input type="text" name="s_turn"/></td>
+						<td align="center"><textarea id="s_turn_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >DRG病组覆盖率</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >DRG病组覆盖率=上年（月））或本年（月）医疗机构DRG入组病组数量/上年（月）或本年（月）医疗机构DRG病组数量&#215;100%</p></td>
+						<td align="center"><p >不低于上年（月））或本年（月）97%，低于97%后每减少1%，扣1分</p></td>
+						<td align="center" id="s_drg"><input type="text" name="s_drg" /></td>
+						<td align="center"><textarea id="s_drg_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >DRG病组入组率</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >DRG病组入组率=入组病例数/结算病例总数&#215;100%</p></td>
+						<td align="center"><p >不低于上年（月））或本年（月）97%，低于97%后每减少1%，扣1分</p></td>
+						<td align="center" id="s_drg_g"><input type="text" name="s_drg_g" /></td>
+						<td align="center"><textarea id="s_drg_g_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >总权重</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >总权重=&#8721;（各DRG权重&#215;该DRG组出院人次数）</p></td>
+						<td align="center"><p >不低于上年（月））或本年（月）水平，每低于10，扣1分</p></td>
+						<td align="center" id="s_weight"><input type="text" name="s_weight" /></td>
+						<td align="center"><textarea id="s_weight_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr class="kaohe_color">
+						<td align="center"><p >病例组合指数（CMI值）</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >CMI值=总权重/出院人次</p></td>
+						<td align="center"><p >不低于上年（月））或本年（月）水平，每低于0.1，扣1分</p></td>
+						<td align="center" id="s_cmi"><input type="text" name="s_cmi" /></td>
+						<td align="center"><textarea id="s_cmi_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td rowspan="6" align="center"><p align="center" ><strong>医疗费用控制</strong><strong> </strong><br />
+							<strong>20分</strong></p></td>
+						<td align="center" class="kaohe_color"><p >按项目结算与DRGs结算占比</p></td>
+						<td align="center" class="kaohe_color">5</td>
+						<td align="center" class="kaohe_color"><p >按项目结算与DRGs结算占比=（按项目结算费用-DRGs结算费用）/按项目结算费用&#215;100%</p></td>
+						<td align="center" class="kaohe_color"><p >不高于上年（月）或当年（月）的5%，高于5%的，每超出1%，扣1分</p></td>
+						<td align="center" class="kaohe_color" id="f_ratio"><input type="text" name="f_ratio" /></td>
+						<td align="center" class="kaohe_color"><textarea id="f_ratio_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr  class="kaohe_color">
+						<td align="center"><p >次均住院费用</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >次均住院费用=参合患者住院总费用/参合患者住院补偿人次数</p></td>
+						<td align="center"><p >三级医院次均住院费用上涨较上年控制在8%以内，二级医院控制在6%以内，高于控制范围后每超过1%，扣1分</p></td>
+						<td align="center" id="f_mean"><input type="text"  name="f_mean"/></td>
+						<td align="center"><textarea id="f_mean_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr  class="kaohe_color">
+						<td align="center"><p >平均住院日</p></td>
+						<td align="center">3</td>
+						<td align="center"><p >平均住院日=参合患者住院总床日数/参合患者出院人次数</p></td>
+						<td align="center"><p >平均住院日较上年同期相比，每超出1天，扣1分</p></td>
+						<td align="center" id="f_day"><input type="text" name="f_day" /></td>
+						<td align="center"><textarea id="f_day_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr  class="kaohe_color">
+						<td align="center"><p >实际补偿比</p></td>
+						<td align="center">4</td>
+						<td align="center"><p >实际补偿比=参合患者住院补偿总额/参合患者住院总费用&#215;100%</p></td>
+						<td align="center"><p >实际补偿比不低于上年同期水平，每低于1%扣1分</p></td>
+						<td align="center" id="f_compensate"><input type="text"  name="f_compensate"/></td>
+						<td align="center"><textarea id="f_compensate_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr  class="kaohe_color">
+						<td align="center"><p >非合规费用占比</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >非合规费用占比=参合患者住院非合规医疗费用/参合患者住院总费用&#215;100%</p></td>
+						<td align="center"><p >非合规费用占比控制在10%以内，高于控制范围后每超出1%，扣1分</p></td>
+						<td align="center" id="f_illegal"><input type="text"  name="f_illegal"/></td>
+						<td align="center"><textarea id="f_illegal_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td align="center"><p >自费药占比</p></td>
+						<td align="center">2</td>
+						<td align="center"><p >自费药占比=自费药品费用／药品总费用</p></td>
+						<td align="center"><p >三级医院自费药占比不超5%，二级医院不超3%，每超出1%，扣1分</p></td>
+						<td align="center" id="f_self"><input type="text" name="f_self"/></td>
+						<td align="center"><textarea id="f_self_2" rows="9" cols="20"></textarea></td>
+					</tr>
+					<tr>
+						<td colspan="7" align="left" style="font-size: 20px;">
+							注：1、总分100分，每项实际扣分不超过该项总分。考核得分保留两位小数；<br>
+							2、2017年考核以月考核为主，各项考核指标与同年上月相比；2018年同期有上年度月份指标的，才开展与上年或上年同月相比。<br>
+							考核组人员(签字)：______________考核时间: 年_____月_____日
+						</td>
+
+					</tr>
+				</table>
+			</div>
+			<table width="8%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #CCC; float:left" class="shuoming" >
+				<tr>
+					<td>说明</td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="year_select" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="year_select2" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><input type="button" value="核查" onclick="looks('RANDOM_SEARCH_100','s_error')"></td>
+				</tr>
+				<tr>
+					<td><input type="button" value="核查" onclick="looks('RANDOM_SEARCH_100','s_code')"></td>
+				</tr>
+				<tr>
+					<td><input type="button" value="核查" onclick="looks('RANDOM_SEARCH_100','s_lack')"></td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="s_drg_input" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="s_drg_g_input" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="s_weight_input" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="s_cmi_input" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<select class="item-text" id="f_ratio_input" name="dept" style="width:60px;">
+							<option value="0">上年</option>
+							<option value="1" selected="selected">上月</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td></td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+				</tr>
+			</table>
+		</div>
+		<div style="clear: both">
+			<div style="text-align:center;padding:10px;">
+				<span id="save_kaohe"><a href="javascript:void(0)" class="easyui-linkbutton" onclick="submits()" iconCls="icon-ok">提交</a></span>
+				&nbsp;&nbsp;
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="kaohe_close()" iconCls="icon-cancel">关闭</a>
+				&nbsp;&nbsp;
+				<a href="javascript:void(0)" class="easyui-linkbutton" onClick="Print('#copy_dy')" iconCls="icon-print">打印</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 显示随机抽查100条列表 -->
+<div id="lookRoundDiv" class="easyui-window" closed="true" modal="true" title="随机抽取病例" data-options="iconCls:'icon-save',minimizable:false,maximizable:false" style="width:85%;height:75%">
+	<div class="easyui-layout" style="width:100%;height: 100%" >
+		<div data-options="region:'center',border:false,split:false">
+			<table id="round100"></table>
+		</div>
+	</div>
+	<div style="clear: both;">
+		<div style="text-align:center;padding:10px;">
+			<span id="round100_up"><a href="javascript:void(0)" class="easyui-linkbutton" onclick="round100_up()" iconCls="icon-ok">提交</a></span>
+			&nbsp;&nbsp;
+			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="round100_close()" iconCls="icon-cancel">关闭</a>
+		</div>
+	</div>
+</div>
+<!--抽取100条保存-->
+<div id="lookRoundDiv_cq" class="easyui-window" closed="true" modal="true" title="随机抽取病例_详细" data-options="iconCls:'icon-save',minimizable:false,maximizable:false" style="width:85%;height:75%">
+	<div class="easyui-layout" style="width:100%;height: 100%" >
+		<div data-options="region:'center',border:false,split:false">
+			<table id="round100_cq"></table>
+		</div>
+	</div>
+	<div style="clear: both;">
+		<div style="text-align:center;padding:10px;">
+			<span id="round100_up2"><a href="javascript:void(0)" class="easyui-linkbutton" onclick="round100_up2()" iconCls="icon-ok">提交</a></span>
+			&nbsp;&nbsp;
+			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="round100_close()" iconCls="icon-cancel">关闭</a>
+		</div>
+	</div>
+</div>
+</body>
+</html>

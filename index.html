@@ -1,10 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="Stylesheet" href="../../css/themes/default/easyui.css"/>
+    <link type="text/css" rel="Stylesheet" href="../../css/themes/icon.css"/>
+    <link type="text/css" rel="Stylesheet" href="../../css/style.css"/>
+    <script type="text/javascript" src="../../js/jquery/jquery.min-1.11.1.js"></script>
+    <script type="text/javascript" src="../../js/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../js/easyui/easyui-lang-zh_CN.js"></script>
+    <script type="text/javascript" src="../../js/moment.min.js"></script>
+    <script type="text/javascript" src="../../js/path.js"></script>
+    <script type="text/javascript" src="../../js/base.js"></script>
+    <script type="text/javascript" src="../../js/jquery/jquery.blockUI.js"></script>
+    <script type="text/javascript" src="../../js/dic.js"></script>
+    <script type="text/javascript" src="../../js/base64.js"></script>
+    <script type="text/javascript" src="../../js/My97DatePicker/WdatePicker.js"></script>
+    <script type="text/javascript" src="../../js/Highcharts-3.0.7/js/highcharts.src.js"></script>
+    <script type="text/javascript" src="../../js/report/reportbase.js"></script>
+    
+<title>六盘水月考核首页</title>
+<style type="text/css">
+ 
+</style>
+<script type="text/javascript">
+
+var currTab;	// 当前tab
+$(function(){
+	// 添加分类pannel
+	var tabs = $('#tt');
+	tabs.tabs({  
+		fit:true,region:'center',border:false,tabPosition:'left',headerWidth:100,
+	    onSelect:function(title, index){  
+	    	//currTabIndex = index;
+	        var currTab = tabs.tabs('getSelected'); 
+	        if(currTab.find("iframe").attr("src")==undefined || currTab.find("iframe").attr("src")==""){
+	        	currTab.find("iframe").attr("src", currTab.attr('url'));
+	        }
+	    }  
+	});  
+
+	// 设置重绘
+	tabs.panel({
+		onResize:function() {
+			setTimeout('reDraw()',10);
+		},
+		onCollapse:function() {
+			setTimeout('reDraw()',10);
+		},
+		onExpand:function() {
+			setTimeout('reDraw()',10);
+		}
+	});
+
+	// 显示主窗口
+	//tabs.show();
+});
+
+// 重绘tabs
+function reDraw() {
+	$("#tt").tabs('resize');
+}
+
+</script>
+
 </head>
 <body>
-    5
+	<div class="easyui-layout" data-options="fit:true">
+	    <div id="tt"    style="height: 100%;" >
+	       	<div title="月考核" url="drg_exa_month.html" style="padding: 2px">
+	            <iframe id="content" style="border:none;width:100%;height:100%;" frameborder="0"></iframe>
+	       	</div>
+	    </div>
+	</div>
+	
 </body>
 </html>
